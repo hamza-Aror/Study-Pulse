@@ -1,3 +1,4 @@
+HEAD
 # StudyPulse — desktop widget
 
 A small floating, always-on-top study partner that sits in the top-right corner of your screen: today's classes with attendance tracking, and your pending assignments.
@@ -63,3 +64,6 @@ Everything you enter (timetable, attendance history, assignments) is saved local
 - **"npm: command not found"** — Node.js isn't installed, or your terminal needs restarting after installing it.
 - **Blank or missing window** — make sure `npm install` finished without errors before running `npm start`.
 - **Want it in a different corner or size?** — open `main.js` and change the `x`, `y`, `width`, `height` values near the top of `createWindow()`.
+=======
+# Study-Pulse
+855d3d93d3bd186d90fcde384a5199c92c8919ee

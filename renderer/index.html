@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>StudyPulse</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --widget-bg:rgba(255,255,255,0.94);
+    --widget-border:rgba(59,130,246,0.16);
+    --teal:#0EA5A0;
+    --teal-dark:#087f7b;
+    --indigo:#6366F1;
+    --indigo-dark:#4649c9;
+    --ink:#1E293B;
+    --muted:#64748B;
+    --faint:#98A2B3;
+    --success:#10B981;
+    --success-bg:#E6F8F1;
+    --danger:#EF4444;
+    --danger-bg:#FDECEC;
+    --warn:#F59E0B;
+    --warn-bg:#FEF3E0;
+    --line:#E7ECF5;
+    --shadow: 0 10px 34px -12px rgba(30,58,95,0.35), 0 2px 8px -2px rgba(30,58,95,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:transparent;}
+  body{
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    overflow:hidden;
+  }
+  .widget{
+    width:336px;
+    margin:12px;
+    background:var(--widget-bg);
+    backdrop-filter: blur(14px);
+    border:1px solid var(--widget-border);
+    border-radius:20px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    position:relative;
+  }
+  .widget::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--teal), var(--indigo));
+  }
+  .drag-region{
+    -webkit-app-region: drag;
+  }
+  .no-drag{
+    -webkit-app-region: no-drag;
+  }
+  .head{
+    padding:18px 20px 14px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+  }
+  .head .day{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:0.2px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .pulse-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--teal);
+    animation:pulse 2s infinite;
+    flex-shrink:0;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(14,165,160,0.5);}
+    70%{box-shadow:0 0 0 7px rgba(14,165,160,0);}
+    100%{box-shadow:0 0 0 0 rgba(14,165,160,0);}
+  }
+  .head .date{
+    font-size:12.5px;
+    color:var(--muted);
+    margin-top:3px;
+  }
+  .head .right{
+    text-align:right;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:6px;
+  }
+  .clock{
+    font-family:'JetBrains Mono',monospace;
+    font-size:16px;
+    font-weight:500;
+    color:var(--indigo-dark);
+  }
+  .win-controls{
+    display:flex;
+    gap:4px;
+  }
+  .icon-btn{
+    background:none;border:none;cursor:pointer;
+    color:var(--faint);
+    padding:4px;
+    border-radius:8px;
+    display:inline-flex;
+    transition:color .15s, background .15s;
+  }
+  .icon-btn:hover{ color:var(--indigo); background:rgba(99,102,241,0.08); }
+  .icon-btn.danger:hover{ color:var(--danger); background:var(--danger-bg); }
+  .divider{
+    height:1px;
+    margin:0 20px;
+    background:linear-gradient(90deg, transparent, var(--teal), var(--indigo), transparent);
+    opacity:0.35;
+  }
+  .section{ padding:16px 20px 6px; }
+  .section-title{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .section-title h3{
+    margin:0;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    letter-spacing:0.6px;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .attendance-badge{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    font-weight:500;
+    padding:2px 8px;
+    border-radius:100px;
+    background:var(--success-bg);
+    color:var(--teal-dark);
+  }
+  .attendance-badge.low{ background:var(--danger-bg); color:var(--danger); }
+  .attendance-badge.mid{ background:var(--warn-bg); color:#8a5a06; }
+  .class-row, .assign-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .class-row:last-child, .assign-row:last-child{ border-bottom:none; }
+  .class-time{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    width:52px;
+    flex-shrink:0;
+  }
+  .class-info{ flex:1; min-width:0; }
+  .class-subject{
+    font-size:13.5px;
+    font-weight:500;
+    color:var(--ink);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .class-pct{
+    font-size:11px;
+    color:var(--faint);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .status-pill{
+    font-size:11px;
+    font-weight:500;
+    padding:5px 10px;
+    border-radius:100px;
+    border:none;
+    cursor:pointer;
+    flex-shrink:0;
+    transition:transform .1s;
+    font-family:'Inter',sans-serif;
+  }
+  .status-pill:active{ transform:scale(0.94); }
+  .status-pending{ background:#EEF1F6; color:var(--muted); }
+  .status-present{ background:var(--success-bg); color:var(--success); }
+  .status-absent{ background:var(--danger-bg); color:var(--danger); }
+  .empty{
+    font-size:12.5px;
+    color:var(--faint);
+    padding:14px 0;
+    text-align:center;
+  }
+  .assign-check{
+    width:18px;height:18px;
+    border-radius:6px;
+    border:1.5px solid #C7D0DE;
+    flex-shrink:0;
+    cursor:pointer;
+    background:#fff;
+  }
+  .assign-check:hover{ border-color:var(--teal); }
+  .assign-title{
+    flex:1;
+    font-size:13.5px;
+    color:var(--ink);
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .assign-due{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--faint);
+    flex-shrink:0;
+  }
+  .assign-due.overdue{ color:var(--danger); font-weight:500; }
+  .assign-del{
+    background:none;border:none;cursor:pointer;color:var(--faint);
+    padding:2px; flex-shrink:0; border-radius:6px;
+  }
+  .assign-del:hover{ color:var(--danger); }
+  .add-row{
+    display:flex;
+    gap:6px;
+    padding:12px 0 4px;
+  }
+  .add-row input{
+    flex:1;
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:8px 10px;
+    font-size:12.5px;
+    font-family:'Inter',sans-serif;
+    outline:none;
+    background:#FAFBFD;
+    min-width:0;
+  }
+  .add-row input:focus{ border-color:var(--teal); background:#fff; }
+  .add-row input[type="date"]{ flex:0 0 118px; color:var(--muted); }
+  .add-btn{
+    width:32px; height:32px; flex-shrink:0;
+    border:none; border-radius:9px;
+    background:linear-gradient(135deg, var(--teal), var(--indigo));
+    color:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:17px; line-height:1;
+  }
+  .add-btn:active{ transform:scale(0.94); }
+  .footer{
+    padding:12px 20px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .brand{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    color:var(--faint);
+    letter-spacing:0.4px;
+  }
+  .overall-att{
+    font-size:11px;
+    color:var(--muted);
+  }
+
+  .settings-head{
+    padding:18px 20px 12px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .settings-head h2{
+    margin:0;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:16px; font-weight:600;
+  }
+  .back-btn{
+    background:none;border:none;cursor:pointer;color:var(--muted);
+    display:flex;align-items:center;gap:4px;font-size:12px;
+    padding:4px 6px;border-radius:8px;
+  }
+  .back-btn:hover{ background:#F1F4F9; }
+  .settings-body{ padding:0 20px 18px; max-height:440px; overflow-y:auto; }
+  .settings-sub{
+    font-size:11.5px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;
+    color:var(--muted); margin:14px 0 8px;
+  }
+  .tt-row{
+    display:flex; align-items:center; gap:8px; padding:7px 0;
+    border-bottom:1px solid var(--line);
+    font-size:12.5px;
+  }
+  .tt-day{
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:var(--indigo-dark); background:#EEF0FE; padding:3px 6px; border-radius:6px;
+    flex-shrink:0; width:34px; text-align:center;
+  }
+  .tt-subject{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tt-time{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--muted); flex-shrink:0; }
+  .tt-del{ background:none;border:none;cursor:pointer;color:var(--faint); flex-shrink:0; }
+  .tt-del:hover{ color:var(--danger); }
+  .tt-form{
+    display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;
+  }
+  .tt-form input, .tt-form select{
+    border:1px solid var(--line); border-radius:9px; padding:8px 9px;
+    font-size:12.5px; font-family:'Inter',sans-serif; outline:none; background:#FAFBFD;
+  }
+  .tt-form input:focus, .tt-form select:focus{ border-color:var(--teal); background:#fff; }
+  .tt-form .f-subject{ flex:1 1 100%; }
+  .tt-form .f-day{ flex:1 1 90px; }
+  .tt-form .f-time{ flex:1 1 90px; }
+  .tt-form .f-add{
+    flex-shrink:0; border:none; border-radius:9px; padding:0 14px;
+    background:linear-gradient(135deg, var(--teal), var(--indigo)); color:#fff;
+    cursor:pointer; font-size:12.5px; font-weight:500; font-family:'Inter',sans-serif;
+  }
+  .hint{ font-size:11px; color:var(--faint); margin-top:6px; line-height:1.5; }
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:10px; font-size:12.5px;
+  }
+  .switch{
+    width:36px; height:20px; border-radius:100px; background:#D9DEE8;
+    position:relative; cursor:pointer; border:none; flex-shrink:0;
+  }
+  .switch.on{ background:var(--teal); }
+  .switch .knob{
+    position:absolute; top:2px; left:2px; width:16px; height:16px;
+    border-radius:50%; background:#fff; transition:left .15s;
+  }
+  .switch.on .knob{ left:18px; }
+  .reset-btn{
+    margin-top:16px; width:100%; padding:9px; border-radius:9px;
+    border:1px solid var(--danger-bg); background:var(--danger-bg); color:var(--danger);
+    font-size:12px; font-weight:500; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  ::-webkit-scrollbar{ width:6px; }
+  ::-webkit-scrollbar-thumb{ background:#D6DEEA; border-radius:10px; }
+</style>
+</head>
+<body>
+
+<div class="widget" id="widget">
+  <div id="mainView"></div>
+  <div id="settingsView" style="display:none;"></div>
+</div>
+
+<script>
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+let state = {
+  timetable: [],
+  attendanceLog: {},
+  assignments: [],
+  autoLaunch: true
+};
+
+let showSettings = false;
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+async function loadAll(){
+  try{
+    const r = await window.storage.get('sp-timetable');
+    state.timetable = r ? JSON.parse(r.value) : [];
+  }catch(e){ state.timetable = []; }
+
+  try{
+    const r = await window.storage.get('sp-attendance-log');
+    state.attendanceLog = r ? JSON.parse(r.value) : {};
+  }catch(e){ state.attendanceLog = {}; }
+
+  try{
+    const r = await window.storage.get('sp-assignments');
+    state.assignments = r ? JSON.parse(r.value) : [];
+  }catch(e){ state.assignments = []; }
+}
+
+async function saveTimetable(){
+  try{ await window.storage.set('sp-timetable', JSON.stringify(state.timetable)); }catch(e){}
+}
+async function saveAttendance(){
+  try{ await window.storage.set('sp-attendance-log', JSON.stringify(state.attendanceLog)); }catch(e){}
+}
+async function saveAssignments(){
+  try{ await window.storage.set('sp-assignments', JSON.stringify(state.assignments)); }catch(e){}
+}
+
+function todayISO(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function attendancePctFor(classId){
+  let present=0, absent=0;
+  for(const key in state.attendanceLog){
+    if(key.startsWith(classId+':')){
+      if(state.attendanceLog[key]==='present') present++;
+      else if(state.attendanceLog[key]==='absent') absent++;
+    }
+  }
+  const total = present+absent;
+  if(total===0) return null;
+  return Math.round((present/total)*100);
+}
+
+function overallAttendancePct(){
+  let present=0, absent=0;
+  for(const key in state.attendanceLog){
+    if(state.attendanceLog[key]==='present') present++;
+    else if(state.attendanceLog[key]==='absent') absent++;
+  }
+  const total = present+absent;
+  if(total===0) return null;
+  return Math.round((present/total)*100);
+}
+
+function todaysClasses(){
+  const dow = new Date().getDay();
+  return state.timetable
+    .filter(c => c.day === dow)
+    .sort((a,b) => a.time.localeCompare(b.time));
+}
+
+function cycleStatus(classId){
+  const key = classId+':'+todayISO();
+  const cur = state.attendanceLog[key] || 'pending';
+  const next = cur==='pending' ? 'present' : cur==='present' ? 'absent' : 'pending';
+  if(next==='pending') delete state.attendanceLog[key];
+  else state.attendanceLog[key] = next;
+  saveAttendance();
+  renderMain();
+}
+
+function fmtTime12(t){
+  const [h,m] = t.split(':').map(Number);
+  const period = h>=12 ? 'PM':'AM';
+  const h12 = h%12===0 ? 12 : h%12;
+  return h12+':'+String(m).padStart(2,'0')+' '+period;
+}
+
+function fmtDue(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr+'T00:00:00');
+  return d.toLocaleDateString('en-US',{month:'short', day:'numeric'});
+}
+
+function isOverdue(dateStr){
+  if(!dateStr) return false;
+  return dateStr < todayISO();
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.innerText = s;
+  return d.innerHTML;
+}
+
+function renderMain(){
+  const now = new Date();
+  const dayName = DAY_NAMES[now.getDay()];
+  const dateStr = now.toLocaleDateString('en-US',{month:'long', day:'numeric', year:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit', minute:'2-digit'});
+
+  const classes = todaysClasses();
+  const overall = overallAttendancePct();
+  const overallClass = overall===null ? '' : overall>=85 ? '' : overall>=70 ? 'mid' : 'low';
+
+  let classesHtml = '';
+  if(classes.length===0){
+    classesHtml = '<div class="empty">No classes scheduled today. Add your timetable in settings.</div>';
+  }else{
+    classesHtml = classes.map(c=>{
+      const key = c.id+':'+todayISO();
+      const status = state.attendanceLog[key] || 'pending';
+      const pct = attendancePctFor(c.id);
+      const pctLabel = pct===null ? '—' : pct+'%';
+      const label = status==='present' ? 'Present' : status==='absent' ? 'Absent' : 'Mark';
+      return `
+        <div class="class-row">
+          <span class="class-time">${fmtTime12(c.time)}</span>
+          <div class="class-info">
+            <div class="class-subject">${escapeHtml(c.subject)}</div>
+            <div class="class-pct">Attendance ${pctLabel}</div>
+          </div>
+          <button class="status-pill status-${status} no-drag" onclick="cycleStatus('${c.id}')">${label}</button>
+        </div>`;
+    }).join('');
+  }
+
+  const pending = state.assignments.filter(a=>!a.done).sort((a,b)=>{
+    if(!a.due) return 1;
+    if(!b.due) return -1;
+    return a.due.localeCompare(b.due);
+  });
+
+  let assignHtml = '';
+  if(pending.length===0){
+    assignHtml = '<div class="empty">No pending assignments. Nice work.</div>';
+  }else{
+    assignHtml = pending.map(a=>{
+      const overdue = isOverdue(a.due);
+      return `
+        <div class="assign-row">
+          <button class="assign-check no-drag" onclick="toggleAssign('${a.id}')" title="Mark done"></button>
+          <span class="assign-title">${escapeHtml(a.title)}</span>
+          ${a.due ? `<span class="assign-due ${overdue?'overdue':''}">${fmtDue(a.due)}</span>` : ''}
+          <button class="assign-del no-drag" onclick="deleteAssign('${a.id}')" title="Remove">✕</button>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('mainView').innerHTML = `
+    <div class="head drag-region">
+      <div>
+        <div class="day"><span class="pulse-dot"></span>${dayName}</div>
+        <div class="date">${dateStr}</div>
+      </div>
+      <div class="right">
+        <div class="win-controls">
+          <button class="icon-btn no-drag" onclick="openSettings()" title="Settings">${gearIcon()}</button>
+          <button class="icon-btn no-drag" onclick="window.desktopApp.minimize()" title="Minimize">${minIcon()}</button>
+          <button class="icon-btn danger no-drag" onclick="window.desktopApp.close()" title="Close">${closeIcon()}</button>
+        </div>
+        <div class="clock">${timeStr}</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="section">
+      <div class="section-title">
+        <h3>Today's classes</h3>
+        <span class="attendance-badge ${overallClass}">${overall===null?'—':overall+'%'} overall</span>
+      </div>
+      ${classesHtml}
+    </div>
+    <div class="divider"></div>
+    <div class="section">
+      <div class="section-title">
+        <h3>Pending assignments</h3>
+        <span style="font-size:11px;color:var(--faint);">${pending.length} left</span>
+      </div>
+      ${assignHtml}
+      <div class="add-row">
+        <input type="text" id="newAssignTitle" placeholder="New assignment" />
+        <input type="date" id="newAssignDue" />
+        <button class="add-btn" onclick="addAssignment()">+</button>
+      </div>
+    </div>
+    <div class="footer">
+      <span class="brand">STUDYPULSE | by Hamza</span>
+      <span class="overall-att">Drag header to move</span>
+    </div>
+  `;
+
+  document.getElementById('newAssignTitle').addEventListener('keydown', e=>{
+    if(e.key==='Enter') addAssignment();
+  });
+}
+
+function gearIcon(){
+  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`;
+}
+function backIcon(){
+  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>`;
+}
+function minIcon(){
+  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>`;
+}
+function closeIcon(){
+  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
+}
+
+async function toggleAssign(id){
+  const a = state.assignments.find(x=>x.id===id);
+  if(a){ a.done = true; await saveAssignments(); renderMain(); }
+}
+async function deleteAssign(id){
+  state.assignments = state.assignments.filter(x=>x.id!==id);
+  await saveAssignments();
+  renderMain();
+}
+async function addAssignment(){
+  const titleEl = document.getElementById('newAssignTitle');
+  const dueEl = document.getElementById('newAssignDue');
+  const title = titleEl.value.trim();
+  if(!title) return;
+  state.assignments.push({ id: uid(), title, due: dueEl.value || null, done:false });
+  await saveAssignments();
+  renderMain();
+}
+
+function openSettings(){
+  showSettings = true;
+  document.getElementById('mainView').style.display = 'none';
+  document.getElementById('settingsView').style.display = 'block';
+  renderSettings();
+}
+function closeSettings(){
+  showSettings = false;
+  document.getElementById('settingsView').style.display = 'none';
+  document.getElementById('mainView').style.display = 'block';
+  renderMain();
+}
+
+function renderSettings(){
+  const rows = state.timetable
+    .slice()
+    .sort((a,b)=> a.day-b.day || a.time.localeCompare(b.time))
+    .map(c=>`
+      <div class="tt-row">
+        <span class="tt-day">${DAY_SHORT[c.day]}</span>
+        <span class="tt-subject">${escapeHtml(c.subject)}</span>
+        <span class="tt-time">${fmtTime12(c.time)}</span>
+        <button class="tt-del" onclick="deleteClass('${c.id}')" title="Remove">✕</button>
+      </div>`).join('') || '<div class="empty">No classes added yet.</div>';
+
+  const dayOptions = DAY_NAMES.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+
+  document.getElementById('settingsView').innerHTML = `
+    <div class="settings-head drag-region">
+      <button class="back-btn no-drag" onclick="closeSettings()">${backIcon()} Back</button>
+      <h2>Settings</h2>
+      <button class="icon-btn danger no-drag" onclick="window.desktopApp.close()" title="Close">${closeIcon()}</button>
+    </div>
+    <div class="divider"></div>
+    <div class="settings-body">
+      <div class="settings-sub">Weekly timetable</div>
+      ${rows}
+      <div class="tt-form">
+        <input type="text" class="f-subject" id="ttSubject" placeholder="Subject name" />
+        <select class="f-day" id="ttDay">${dayOptions}</select>
+        <input type="time" class="f-time" id="ttTime" value="09:00" />
+        <button class="f-add" onclick="addClass()">Add class</button>
+      </div>
+      <div class="hint">Add every class you attend each week. StudyPulse shows only today's classes automatically and builds your attendance % from how you mark them, day by day.</div>
+
+      <div class="settings-sub" style="margin-top:20px;">Startup</div>
+      <div class="toggle-row">
+        <span>Open StudyPulse when my computer starts</span>
+        <button class="switch ${state.autoLaunch ? 'on':''}" id="autoLaunchToggle" onclick="toggleAutoLaunch()"><span class="knob"></span></button>
+      </div>
+
+      <div class="settings-sub" style="margin-top:20px;">Data</div>
+      <div class="hint">Your schedule, attendance history and assignments are saved locally on this computer.</div>
+      <button class="reset-btn" onclick="resetAll()">Clear all data</button>
+    </div>
+  `;
+  document.getElementById('ttDay').value = new Date().getDay();
+}
+
+async function toggleAutoLaunch(){
+  state.autoLaunch = !state.autoLaunch;
+  try{ await window.desktopApp.setAutoLaunch(state.autoLaunch); }catch(e){}
+  renderSettings();
+}
+
+async function addClass(){
+  const subjectEl = document.getElementById('ttSubject');
+  const dayEl = document.getElementById('ttDay');
+  const timeEl = document.getElementById('ttTime');
+  const subject = subjectEl.value.trim();
+  if(!subject) return;
+  state.timetable.push({ id: uid(), subject, day: Number(dayEl.value), time: timeEl.value || '09:00' });
+  await saveTimetable();
+  renderSettings();
+}
+async function deleteClass(id){
+  state.timetable = state.timetable.filter(c=>c.id!==id);
+  await saveTimetable();
+  renderSettings();
+}
+async function resetAll(){
+  if(!confirm('This clears your timetable, attendance history and assignments. Continue?')) return;
+  state.timetable = [];
+  state.attendanceLog = {};
+  state.assignments = [];
+  await saveTimetable();
+  await saveAttendance();
+  await saveAssignments();
+  renderSettings();
+}
+
+async function init(){
+  await loadAll();
+  renderMain();
+  setInterval(()=>{ if(!showSettings) renderMain(); }, 30000);
+}
+init();
+</script>
+</body>
+</html>
